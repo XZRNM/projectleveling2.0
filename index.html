@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ProjectLeveling — Lista com Login, XP e Tema</title>
+  <style>
+    /* (mesmo CSS do seu arquivo anterior; mantive idêntico para não alterar aparência) */
+    :root{ --bg:#f7f7f7; --card:#ffffff; --text:#111; --muted:#666; --accent:#2b8aef; --danger:#e04b4b; }
+    body.dark{ --bg:#0f1113; --card:#111418; --text:#e6eef6; --muted:#9aa6b2; --accent:#3aa0ff; --danger:#ff7777; }
+    *{box-sizing:border-box} body{ margin:0; min-height:100vh; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); padding:24px; display:flex; align-items:flex-start; justify-content:center; gap:20px; }
+    .container{ width:100%; max-width:920px; display:grid; grid-template-columns: 320px 1fr; gap:20px; }
+    .box{ background:var(--card); border-radius:12px; padding:16px; box-shadow: 0 6px 22px rgba(0,0,0,0.06); }
+    h2{margin:0 0 12px 0;font-size:1.1rem} label{display:block;font-size:0.85rem;color:var(--muted);margin-bottom:6px}
+    input[type="text"], input[type="password"]{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); background:transparent; color:var(--text); margin-bottom:8px; }
+    button{ background:var(--accent); color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
+    button.ghost{ background:transparent;color:var(--accent);border:1px solid rgba(0,0,0,0.06) }
+    .muted{color:var(--muted);font-size:0.9rem} .center{display:flex;gap:8px;align-items:center}
+    .profile{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .avatar{ width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ed0ff); display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem; }
+    .levelBox{margin-top:10px} .xpBar{ height:12px;background:rgba(0,0,0,0.06);border-radius:8px;overflow:hidden;margin-top:8px; } .xpBar > i{display:block;height:100%;background:var(--accent); width:0%}
+    .input-row{display:flex;gap:8px} .input-row input{flex:1} ul{list-style:none;padding:0;margin:8px 0}
+    li{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(0,0,0,0.01), transparent)}
+    li .task-text{flex:1;word-break:break-word} li .task-text.done{text-decoration:line-through;opacity:0.6}
+    .smallBtn{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(0,0,0,0.06);cursor:pointer}
+    .danger{border-color:var(--danger);color:var(--danger)} .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .help{font-size:0.85rem;color:var(--muted);margin-top:8px}
+    @media (max-width:880px){ .container{grid-template-columns:1fr; padding:0 12px} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- LEFT: login / profile -->
+    <div class="box" id="loginBox">
+      <!-- Login / Register -->
+      <div id="authArea">
+        <h2>Entrar / Registrar</h2>
+        <div class="row">
+          <label>Nome de usuário</label>
+          <input id="usernameField" type="text" placeholder="ex: renan" />
+        </div>
+        <div class="row">
+          <label>Senha</label>
+          <input id="passwordField" type="password" placeholder="sua senha" />
+        </div>
+        <div class="center" style="margin-top:6px">
+          <button id="btnLogin">Entrar</button>
+          <button id="btnRegister" class="ghost">Registrar</button>
+        </div>
+        <p id="authMsg" class="muted" style="margin-top:8px"></p>
+      </div>
+
+      <!-- Profile shown after login -->
+      <div id="profileArea" style="display:none">
+        <div class="profile">
+          <div class="left">
+            <div class="avatar" id="avatarInitial">U</div>
+            <div>
+              <div id="displayUser" style="font-weight:700"></div>
+              <div class="muted" id="displayEmail" style="font-size:0.85rem"></div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.95rem">Nível <span id="displayLevel">1</span></div>
+            <div style="font-size:0.85rem" class="muted">XP: <span id="displayXp">0</span></div>
+          </div>
+        </div>
+
+        <div class="levelBox">
+          <div class="xpBar"><i id="xpFill" style="width:0%"></i></div>
+          <div class="muted" style="margin-top:6px;font-size:0.85rem">Próximo nível em <span id="xpToNext">100</span> XP</div>
+        </div>
+
+        <div style="margin-top:12px" class="center">
+          <label style="margin-right:6px" class="muted">Tema escuro</label>
+          <input type="checkbox" id="themeToggle" />
+        </div>
+
+        <div class="controls" style="margin-top:12px">
+          <button id="btnLogout" class="ghost">Sair</button>
+          <button id="btnDeleteAccount" class="smallBtn danger">Excluir Conta</button>
+        </div>
+
+        <p class="help">As tarefas, nível e preferências ficam salvas apenas no seu navegador (localStorage).</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: task list -->
+    <div class="box" id="taskBox">
+      <div id="taskArea" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <h2>Lista de Tarefas</h2>
+          <div class="muted">XP por tarefa: <strong>+10</strong></div>
+        </div>
+
+        <div class="input-row" style="margin-top:8px">
+          <input id="taskInput" type="text" placeholder="Nova tarefa..." />
+          <button id="addTaskBtn">Adicionar</button>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <div class="controls">
+          <button id="clearDone" class="smallBtn">Remover concluídas</button>
+          <button id="exportBtn" class="smallBtn">Exportar (JSON)</button>
+          <button id="importBtn" class="smallBtn">Importar (colar JSON)</button>
+        </div>
+
+        <p class="help">Edite com o botão ✏️ — concluir dá XP apenas uma vez por tarefa.</p>
+      </div>
+
+      <div id="noAuth" style="display:block">
+        <h2>Bem vindo ao ProjectLeveling</h2>
+        <p class="muted">Entre ou registre-se para começar a gerenciar suas tarefas e ganhar XP.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- storage helpers ---------- */
+function userKey(name){ return "user_"+name.toLowerCase(); }
+function getUserData(name){
+  const raw = localStorage.getItem(userKey(name));
+  if(!raw){
+    return { password: null, tasks: [], xp: 0, level: 1, prefs: { dark: false } };
+  }
+  try{ return JSON.parse(raw); } catch(e){ return null; }
+}
+function saveUserData(name, data){
+  localStorage.setItem(userKey(name), JSON.stringify(data));
+}
+
+/* ---------- leveling ---------- */
+function xpToNext(level){
+  return level * 100;
+}
+function addXpToUser(username, amount){
+  const data = getUserData(username);
+  if(!data) return;
+  data.xp = (data.xp || 0) + amount;
+
+  // level up loop: calculate required using current level each iteration
+  while(true){
+    const required = xpToNext(data.level || 1);
+    if(data.xp < required) break;
+    data.xp = data.xp - required;
+    data.level = (data.level || 1) + 1;
+  }
+
+  saveUserData(username, data);
+  updateProfileUI(data);
+}
+
+/* ---------- UI elements ---------- */
+const usernameField = document.getElementById("usernameField");
+const passwordField = document.getElementById("passwordField");
+const btnLogin = document.getElementById("btnLogin");
+const btnRegister = document.getElementById("btnRegister");
+const authMsg = document.getElementById("authMsg");
+
+const authArea = document.getElementById("authArea");
+const profileArea = document.getElementById("profileArea");
+const avatarInitial = document.getElementById("avatarInitial");
+const displayUser = document.getElementById("displayUser");
+const displayLevel = document.getElementById("displayLevel");
+const displayXp = document.getElementById("displayXp");
+const xpFill = document.getElementById("xpFill");
+const xpToNextEl = document.getElementById("xpToNext");
+const themeToggle = document.getElementById("themeToggle");
+const btnLogout = document.getElementById("btnLogout");
+const btnDeleteAccount = document.getElementById("btnDeleteAccount");
+
+const taskArea = document.getElementById("taskArea");
+const noAuth = document.getElementById("noAuth");
+const taskInput = document.getElementById("taskInput");
+const addTaskBtn = document.getElementById("addTaskBtn");
+const taskList = document.getElementById("taskList");
+const clearDone = document.getElementById("clearDone");
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+
+let currentUser = null;
+
+/* ---------- auth actions ---------- */
+btnRegister.addEventListener("click", () => {
+  const user = usernameField.value.trim();
+  const pass = passwordField.value;
+
+  authMsg.textContent = "";
+  if(!user || !pass){ authMsg.textContent = "Preencha usuário e senha."; return; }
+
+  if(localStorage.getItem(userKey(user))){
+    authMsg.textContent = "Usuário já existe. Faça login.";
+    return;
+  }
+
+  const data = { password: pass, tasks: [], xp: 0, level: 1, prefs: { dark: false } };
+  saveUserData(user, data);
+  authMsg.textContent = "Registrado com sucesso — você já pode entrar.";
+  usernameField.value = user;
+  passwordField.value = "";
+});
+
+btnLogin.addEventListener("click", () => {
+  const user = usernameField.value.trim();
+  const pass = passwordField.value;
+
+  authMsg.textContent = "";
+  if(!user || !pass){ authMsg.textContent = "Preencha usuário e senha."; return; }
+
+  const data = getUserData(user);
+  if(!data || data.password === null){ authMsg.textContent = "Usuário não encontrado."; return; }
+  if(data.password !== pass){ authMsg.textContent = "Senha incorreta."; return; }
+
+  currentUser = user;
+  localStorage.setItem("loggedUser", currentUser);
+  showAppFor(currentUser);
+});
+
+/* check if someone already logged in */
+const remembered = localStorage.getItem("loggedUser");
+if(remembered){
+  const d = getUserData(remembered);
+  if(d) { currentUser = remembered; showAppFor(currentUser); }
+}
+
+/* ---------- show app ---------- */
+function showAppFor(user){
+  authArea.style.display = "none";
+  profileArea.style.display = "block";
+  taskArea.style.display = "block";
+  noAuth.style.display = "none";
+
+  const data = getUserData(user);
+  displayUser.textContent = user;
+  avatarInitial.textContent = user[0].toUpperCase();
+  updateProfileUI(data);
+
+  document.body.classList.toggle("dark", !!data.prefs.dark);
+  themeToggle.checked = !!data.prefs.dark;
+
+  renderTasks(data.tasks);
+}
+
+/* ---------- update profile UI ---------- */
+function updateProfileUI(data){
+  displayLevel.textContent = data.level || 1;
+  displayXp.textContent = data.xp || 0;
+  const required = xpToNext(data.level || 1);
+  const percent = Math.min(100, Math.round(((data.xp || 0) / required) * 100));
+  xpFill.style.width = percent + "%";
+  xpToNextEl.textContent = (required - (data.xp || 0));
+}
+
+/* ---------- task rendering ---------- */
+function renderTasks(tasks){
+  taskList.innerHTML = "";
+  tasks.forEach((task, idx) => {
+    const li = buildTaskLi(task, idx);
+    taskList.appendChild(li);
+  });
+}
+
+function buildTaskLi(task, idx){
+  const li = document.createElement("li");
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.checked = !!task.done;
+
+  const span = document.createElement("span");
+  span.className = "task-text" + (task.done ? " done": "");
+  span.textContent = task.text;
+
+  const edit = document.createElement("button");
+  edit.className = "smallBtn";
+  edit.innerHTML = "✏️";
+
+  const del = document.createElement("button");
+  del.className = "smallBtn danger";
+  del.textContent = "Remover";
+
+  // checkbox change -> mark done and possibly give XP
+  chk.addEventListener("change", () => {
+    const data = getUserData(currentUser);
+    if(!data) return;
+
+    // IMPORTANT: update the task object FIRST and persist it
+    const t = data.tasks[idx];
+    if(!t) return;
+
+    const nowChecked = chk.checked;
+    const previouslyGiven = !!t.xpGiven;
+
+    t.done = nowChecked;
+
+    // if now checked and XP not yet given, mark xpGiven now (so it persists)
+    if(nowChecked && !previouslyGiven){
+      t.xpGiven = true;
+      // save the xpGiven before awarding XP (ensures persistence)
+      data.tasks[idx] = t;
+      saveUserData(currentUser, data);
+      // award XP AFTER saving task state
+      addXpToUser(currentUser, 10);
+    } else {
+      // just save the changed done state (no XP awarded)
+      data.tasks[idx] = t;
+      saveUserData(currentUser, data);
+    }
+
+    // update UI
+    renderTasks(data.tasks);
+    updateProfileUI(getUserData(currentUser));
+  });
+
+  // edit
+  edit.addEventListener("click", () => {
+    const newText = prompt("Editar tarefa:", task.text);
+    if(newText === null) return;
+    const data = getUserData(currentUser);
+    if(!data) return;
+    data.tasks[idx].text = newText.trim() || data.tasks[idx].text;
+    saveUserData(currentUser, data);
+    renderTasks(data.tasks);
+  });
+
+  // delete
+  del.addEventListener("click", () => {
+    if(!confirm("Remover esta tarefa?")) return;
+    const data = getUserData(currentUser);
+    data.tasks.splice(idx, 1);
+    saveUserData(currentUser, data);
+    renderTasks(data.tasks);
+    updateProfileUI(data);
+  });
+
+  li.appendChild(chk);
+  li.appendChild(span);
+  li.appendChild(edit);
+  li.appendChild(del);
+  return li;
+}
+
+/* ---------- add task ---------- */
+addTaskBtn.addEventListener("click", () => {
+  const text = taskInput.value.trim();
+  if(!text || !currentUser) return;
+  const data = getUserData(currentUser);
+  data.tasks.push({ text: text, done: false, xpGiven: false });
+  saveUserData(currentUser, data);
+  taskInput.value = "";
+  renderTasks(data.tasks);
+  updateProfileUI(data);
+});
+
+taskInput.addEventListener("keydown", (e) => { if(e.key === "Enter") addTaskBtn.click(); });
+
+/* ---------- other controls ---------- */
+clearDone.addEventListener("click", () => {
+  if(!currentUser) return;
+  const data = getUserData(currentUser);
+  data.tasks = data.tasks.filter(t => !t.done);
+  saveUserData(currentUser, data);
+  renderTasks(data.tasks);
+  updateProfileUI(data);
+});
+
+exportBtn.addEventListener("click", () => {
+  if(!currentUser) return;
+  const data = getUserData(currentUser);
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = currentUser + "_data.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+importBtn.addEventListener("click", () => {
+  if(!currentUser) return;
+  const raw = prompt("Cole aqui o JSON exportado do seu usuário:");
+  if(!raw) return;
+  try{
+    const parsed = JSON.parse(raw);
+    const current = getUserData(currentUser);
+    current.tasks = parsed.tasks || current.tasks;
+    current.xp = typeof parsed.xp === "number" ? parsed.xp : current.xp;
+    current.level = typeof parsed.level === "number" ? parsed.level : current.level;
+    current.prefs = parsed.prefs || current.prefs;
+    saveUserData(currentUser, current);
+    renderTasks(current.tasks);
+    updateProfileUI(current);
+    alert("Importado com sucesso.");
+  }catch(e){
+    alert("JSON inválido.");
+  }
+});
+
+/* ---------- theme toggle ---------- */
+themeToggle.addEventListener("change", () => {
+  if(!currentUser) return;
+  const data = getUserData(currentUser);
+  data.prefs = data.prefs || {};
+  data.prefs.dark = !!themeToggle.checked;
+  saveUserData(currentUser, data);
+  document.body.classList.toggle("dark", !!themeToggle.checked);
+});
+
+/* ---------- logout & delete ---------- */
+btnLogout.addEventListener("click", () => {
+  localStorage.removeItem("loggedUser");
+  currentUser = null;
+  authArea.style.display = "block";
+  profileArea.style.display = "none";
+  taskArea.style.display = "none";
+  noAuth.style.display = "block";
+  usernameField.value = "";
+  passwordField.value = "";
+  document.body.classList.remove("dark");
+});
+
+btnDeleteAccount.addEventListener("click", () => {
+  if(!currentUser) return;
+  const ok = confirm("Tem certeza? Isso remove todos os dados desta conta neste navegador.");
+  if(!ok) return;
+  localStorage.removeItem(userKey(currentUser));
+  localStorage.removeItem("loggedUser");
+  currentUser = null;
+  authArea.style.display = "block";
+  profileArea.style.display = "none";
+  taskArea.style.display = "none";
+  noAuth.style.display = "block";
+  alert("Conta removida localmente.");
+});
+
+/* ---------- gentle refresh ---------- */
+function refreshUI(){ if(currentUser){ const d = getUserData(currentUser); updateProfileUI(d); renderTasks(d.tasks); } }
+setInterval(refreshUI, 3000);
+</script>
+</body>
+</html>
